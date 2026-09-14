@@ -24,14 +24,15 @@ def main() -> int:
     try:
         page.goto(URL, wait_until="domcontentloaded")
 
-        # Cookiebot loads late and covers the form. Rejecting clears it. Once the
-        # cookie is stored the banner stops appearing, so on later runs this just
-        # times out.
-        try:
-            page.click("#CybotCookiebotDialogBodyButtonDecline", timeout=15000)
-            page.locator("#CybotCookiebotDialog").wait_for(state="hidden", timeout=10000)
-        except Exception:
-            pass
+        # Off by default: waiting for Cookiebot to show up costs up to 15 seconds and
+        # the form is usually reachable anyway. Turn it on if the overlay gets in the
+        # way and you see a "covered by <DIV>" error.
+        if os.getenv("AGBAR_DISMISS_COOKIES", "0") != "0":
+            try:
+                page.click("#CybotCookiebotDialogBodyButtonDecline", timeout=15000)
+                page.locator("#CybotCookiebotDialog").wait_for(state="hidden", timeout=10000)
+            except Exception:
+                pass
 
         page.fill("#individual-user-id", nif)
         page.fill("#individual-password", password)

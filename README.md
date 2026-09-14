@@ -21,10 +21,22 @@ Environment variables work too if you would rather not keep a `.env` around:
 AGBAR_NIF=... AGBAR_PASSWORD=... uvx --from git+https://github.com/aritztg/agbar-reader agbar-reader
 ```
 
-It runs headless by default. Set `AGBAR_HEADLESS=0` to watch the browser work.
-
 It prints the resulting URL and `login: OK` or `login: FAILED`, and writes `after-login.png`
 to the current directory. Exit code is 0 on success, 1 if it is still sitting on the form.
+
+## Options
+
+`AGBAR_HEADLESS=0` shows the browser window instead of running headless.
+
+`AGBAR_DISMISS_COOKIES=1` rejects the Cookiebot banner before filling the form. It is off by
+default because waiting for the banner to appear costs up to 15 seconds on every run. Turn it
+on if the login fails with a "covered by \<DIV>" error.
+
+## Do not run this in a loop
+
+Logging in every few minutes will get you locked out. The block lasts an unknown amount of time,
+and there is no message telling you it happened: the login simply stops working and `after-login.png`
+shows you back on the form. If that starts happening, leave it alone for a few hours before trying again.
 
 ## What it does not do yet
 
