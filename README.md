@@ -30,13 +30,30 @@ to the current directory. Exit code is 0 on success, 1 if it is still sitting on
 
 `AGBAR_DISMISS_COOKIES=1` rejects the Cookiebot banner before filling the form. It is off by
 default because waiting for the banner to appear costs up to 15 seconds on every run. Turn it
-on if the login fails with a "covered by \<DIV>" error.
+on if the login fails with a "covered by \<DIV>" error. With a saved profile you only need it
+once, since the choice is remembered afterwards.
+
+`AGBAR_PROFILE` sets where the browser profile lives. The default is
+`~/.cache/agbar-reader/profile`. Delete that directory to start over from a clean browser.
+
+## Why the profile is saved
+
+reCAPTCHA scores the browser, not the account, and a browser with no history scores badly.
+Running with a throwaway profile every time is what makes Google put up an image grid: same IP,
+same site, a brand new browser on every visit. Keeping the profile means the reCAPTCHA cookie
+survives between runs and you look like a returning visitor.
+
+It also means the session cookie may still be valid on the next run. When that happens the site
+skips the form and the script reports `login: OK (reused the session in the saved profile)`
+without sending the credentials at all.
 
 ## Do not run this in a loop
 
 Logging in every few minutes gets the account blocked for an indeterminate stretch. The site
 answers the login call with `MAX_SESSIONS_REACHED_ERROR`, which the script reads off the
-`ofex-login-api/auth/getToken` response and passes on:
+`ofex-login-api/auth/getToken` response and passes on. The block follows the account, not the
+machine: the same error comes back from a different IP. Each successful login opens a session
+and this script never closes one, so they pile up until you hit the limit.
 
 ```
 login: FAILED (MAX_SESSIONS_REACHED_ERROR)

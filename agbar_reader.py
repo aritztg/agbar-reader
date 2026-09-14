@@ -3,11 +3,12 @@
 import os
 import sys
 
-from cloakbrowser import launch
+from cloakbrowser import launch_persistent_context
 from dotenv import load_dotenv
 
 URL = "https://www.aiguesdebarcelona.cat/es/area-clientes"
 TOKEN_PATH = "ofex-login-api/auth/getToken"
+PROFILE = os.path.expanduser(os.getenv("AGBAR_PROFILE", "~/.cache/agbar-reader/profile"))
 
 
 def main() -> int:
@@ -20,8 +21,14 @@ def main() -> int:
         sys.exit("Set AGBAR_NIF and AGBAR_PASSWORD in the environment or in a .env file")
 
     headless = os.getenv("AGBAR_HEADLESS", "1") != "0"
-    browser = launch(headless=headless, humanize=True, locale="es-ES", timezone="Europe/Madrid")
-    page = browser.new_page()
+    # A saved profile keeps the reCAPTCHA cookie between runs. Google scores a
+    # browser with no history much worse than one it has seen before, and a fresh
+    # profile every time is what got us the image grid.
+    os.makedirs(PROFILE, exist_ok=True)
+    browser = launch_persistent_context(
+        PROFILE, headless=headless, humanize=True, locale="es-ES", timezone="Europe/Madrid"
+    )
+    page = browser.pages[0] if browser.pages else browser.new_page()
 
     # The widget loads on every visit, but it only fetches api2/payload when it
     # decides to put an image grid in front of you.
@@ -46,6 +53,19 @@ def main() -> int:
                 page.locator("#CybotCookiebotDialog").wait_for(state="hidden", timeout=10000)
             except Exception:
                 pass
+
+        # The profile may still hold a live session, in which case the app never
+        # shows the form. The route tells that apart from a page that failed to load.
+        try:
+            page.wait_for_selector("#individual-password", timeout=20000)
+        except Exception:
+            page.screenshot(path="after-login.png", full_page=True)
+            print(f"url: {page.url}")
+            if "#/login" in page.url:
+                print("login: FAILED (the form never rendered)")
+                return 1
+            print("login: OK (reused the session in the saved profile)")
+            return 0
 
         page.fill("#individual-user-id", nif)
         page.fill("#individual-password", password)
