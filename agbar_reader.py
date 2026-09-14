@@ -7,6 +7,7 @@ from cloakbrowser import launch
 from dotenv import load_dotenv
 
 URL = "https://www.aiguesdebarcelona.cat/es/area-clientes"
+TOKEN_PATH = "ofex-login-api/auth/getToken"
 
 
 def main() -> int:
@@ -37,19 +38,34 @@ def main() -> int:
         page.fill("#individual-user-id", nif)
         page.fill("#individual-password", password)
         # The page has three "Entrar" buttons. Two of them belong to the hidden
-        # "Empresas" tab, which is what .business marks.
-        page.click(".box-button-login:not(.business) button.btn-primary")
-
-        # networkidle never fires here because the chat widget keeps polling. The
-        # password field disappearing is what actually tells us we got in.
+        # "Empresas" tab, which is what .business marks. The site reports the real
+        # verdict in the getToken response, not in the page, so read it there.
         try:
-            page.wait_for_selector("#individual-password", state="hidden", timeout=30000)
+            with page.expect_response(f"**/{TOKEN_PATH}", timeout=30000) as token:
+                page.click(".box-button-login:not(.business) button.btn-primary")
+            body = token.value.json()
         except Exception:
-            pass
+            body = {}
+        error = None if body.get("result") else (body.get("errorCode") or body.get("errorMessage"))
+
+        if not error:
+            # networkidle never fires here because the chat widget keeps polling. The
+            # password field disappearing is what actually tells us we got in.
+            try:
+                page.wait_for_selector("#individual-password", state="hidden", timeout=30000)
+            except Exception:
+                pass
+
         page.screenshot(path="after-login.png", full_page=True)
+        print(f"url: {page.url}")
+
+        if error:
+            print(f"login: FAILED ({error})")
+            if error == "MAX_SESSIONS_REACHED_ERROR":
+                print("You have logged in too many times in a row. Wait a while and retry.")
+            return 1
 
         logged_in = not page.locator("#individual-password").is_visible()
-        print(f"url: {page.url}")
         print("login: OK" if logged_in else "login: FAILED (still on the form)")
         return 0 if logged_in else 1
     finally:

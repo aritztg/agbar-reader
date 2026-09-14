@@ -34,9 +34,16 @@ on if the login fails with a "covered by \<DIV>" error.
 
 ## Do not run this in a loop
 
-Logging in every few minutes will get you locked out. The block lasts an unknown amount of time,
-and there is no message telling you it happened: the login simply stops working and `after-login.png`
-shows you back on the form. If that starts happening, leave it alone for a few hours before trying again.
+Logging in every few minutes gets the account blocked for an indeterminate stretch. The site
+answers the login call with `MAX_SESSIONS_REACHED_ERROR`, which the script reads off the
+`ofex-login-api/auth/getToken` response and passes on:
+
+```
+login: FAILED (MAX_SESSIONS_REACHED_ERROR)
+You have logged in too many times in a row. Wait a while and retry.
+```
+
+There is nothing to do about it other than wait.
 
 ## What it does not do yet
 
