@@ -45,6 +45,16 @@ You have logged in too many times in a row. Wait a while and retry.
 
 There is nothing to do about it other than wait.
 
+Hammering the login also makes Google show a reCAPTCHA image grid. When that happens the site
+never sends the login request at all, so there is no error code to report and the script says so
+on its own:
+
+```
+login: FAILED (reCAPTCHA challenge)
+Google is asking for an image challenge, so the login never got sent.
+Rerun with AGBAR_HEADLESS=0 and solve it by hand, or wait it out.
+```
+
 ## What it does not do yet
 
 Nothing beyond the login: no bills, no meter readings, no consumption data.

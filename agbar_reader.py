@@ -22,6 +22,18 @@ def main() -> int:
     headless = os.getenv("AGBAR_HEADLESS", "1") != "0"
     browser = launch(headless=headless, humanize=True, locale="es-ES", timezone="Europe/Madrid")
     page = browser.new_page()
+
+    # The widget loads on every visit, but it only fetches api2/payload when it
+    # decides to put an image grid in front of you.
+    saw_captcha = False
+
+    def note_captcha(request):
+        nonlocal saw_captcha
+        if "recaptcha/api2/payload" in request.url:
+            saw_captcha = True
+
+    page.on("request", note_captcha)
+
     try:
         page.goto(URL, wait_until="domcontentloaded")
 
@@ -48,7 +60,7 @@ def main() -> int:
             body = {}
         error = None if body.get("result") else (body.get("errorCode") or body.get("errorMessage"))
 
-        if not error:
+        if not (error or saw_captcha):
             # networkidle never fires here because the chat widget keeps polling. The
             # password field disappearing is what actually tells us we got in.
             try:
@@ -63,6 +75,12 @@ def main() -> int:
             print(f"login: FAILED ({error})")
             if error == "MAX_SESSIONS_REACHED_ERROR":
                 print("You have logged in too many times in a row. Wait a while and retry.")
+            return 1
+
+        if saw_captcha:
+            print("login: FAILED (reCAPTCHA challenge)")
+            print("Google is asking for an image challenge, so the login never got sent.")
+            print("Rerun with AGBAR_HEADLESS=0 and solve it by hand, or wait it out.")
             return 1
 
         logged_in = not page.locator("#individual-password").is_visible()
