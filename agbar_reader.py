@@ -53,7 +53,7 @@ def main() -> int:
         # "Empresas" tab, which is what .business marks. The site reports the real
         # verdict in the getToken response, not in the page, so read it there.
         try:
-            with page.expect_response(f"**/{TOKEN_PATH}", timeout=30000) as token:
+            with page.expect_response(lambda r: TOKEN_PATH in r.url, timeout=30000) as token:
                 page.click(".box-button-login:not(.business) button.btn-primary")
             body = token.value.json()
         except Exception:
