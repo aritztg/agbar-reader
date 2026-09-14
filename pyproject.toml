@@ -1,0 +1,16 @@
+[project]
+name = "agbar-reader"
+version = "0.1.1"
+description = "Log in to the Aigües de Barcelona customer area with CloakBrowser (PoC)"
+requires-python = ">=3.10"
+dependencies = ["cloakbrowser>=0.5.10", "python-dotenv>=1.0"]
+
+[project.scripts]
+agbar-reader = "agbar_reader:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agbar_reader.py"]
