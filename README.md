@@ -2,7 +2,7 @@
 
 Proof of concept. Logs in to the [Aigües de Barcelona](https://www.aiguesdebarcelona.cat/es/area-clientes)
 customer area with [CloakBrowser](https://pypi.org/project/cloakbrowser/), a stealth Chromium build,
-and saves a screenshot of the page it lands on. No reCAPTCHA challenge so far.
+prints the access token and saves a screenshot of the page it lands on.
 
 ## Run it (uvx, no clone needed)
 
@@ -42,8 +42,8 @@ keeps in its `ofexTokenJwt` cookie. The script reads it from the `getToken` resp
 fresh login, or straight from the cookie when the saved profile still holds a session.
 
 It lasts 60 minutes and the login response carries no refresh token, so anything long running
-has to log in again every hour. Each login opens a session that nobody closes, which is how you
-end up in the section below.
+has to log in again every hour. Each login opens a session that nobody closes, and those pile up.
+See "Do not run this in a loop" below.
 
 ## Options
 
@@ -57,16 +57,16 @@ once, since the choice is remembered afterwards.
 `AGBAR_PROFILE` sets where the browser profile lives. The default is
 `~/.cache/agbar-reader/profile`. Delete that directory to start over from a clean browser.
 
-## Can this skip the browser? No
+## Why the browser cannot be skipped
 
 The login is not a plain OAuth call. The site posts to `api.aiguesdebarcelona.cat/ofex-login-api/auth/getToken`
 with a `recaptchaClientResponse` token in the query string, and the API checks that token against Google
 server-side. Sending a made-up value comes back with `invalid-input-response`, Google's own rejection.
 
-A valid reCAPTCHA token can only be minted by the reCAPTCHA script running in a real browser on the site's
-domain, and it is single use. So the browser is not optional here, it is what produces that token. The
-identity server does advertise a `password` grant at `/connect/token`, but the public `ab_ofex_nativa`
-client is not allowed to use it (`invalid_client`), so that shortcut is closed too.
+Only the reCAPTCHA script running in a real browser on the site's domain can produce a valid token,
+and it is single use. The browser is what produces it. The identity server does advertise a
+`password` grant at `/connect/token`, but the public `ab_ofex_nativa` client is not allowed to use
+it (`invalid_client`), so that shortcut is closed too.
 
 The token that comes back lasts 60 minutes with no refresh token, so a long-running client has to drive the
 browser through the login again every hour.
@@ -95,7 +95,8 @@ login: FAILED (MAX_SESSIONS_REACHED_ERROR)
 You have logged in too many times in a row. Wait a while and retry.
 ```
 
-There is nothing to do about it other than wait.
+There is nothing to do about it other than wait. Sessions do expire on their own after about an
+hour of inactivity, so reads spaced hours apart do not accumulate.
 
 Hammering the login also makes Google show a reCAPTCHA image grid. When that happens the site
 never sends the login request at all, so there is no error code to report and the script says so
@@ -113,39 +114,37 @@ Nothing beyond the login: no bills, no meter readings, no consumption data.
 
 ## Browser alternatives considered
 
-The browser is not decoration here, it is what mints the reCAPTCHA token, so any replacement is
-judged on one question above all: would Google still score it well enough to hand over a token
-invisibly? These were looked at and turned down.
+Whatever drives the login has to get a reCAPTCHA token out of Google without triggering a
+challenge, so that is the test each of these was measured against.
 
 [invisible_playwright](https://github.com/feder-cr/invisible_playwright) patches Firefox at the
 source level, is MIT plus MPL-2.0, and has no license key or session cap, which is its real
-advantage over cloakbrowser. It loses on the thing that matters: Google scores its own browser
-best, so a Firefox fingerprint bets against us on the only variable that keeps breaking this login.
-It also publishes no macOS binary, so you cannot develop against it on a Mac. Footprint is a wash,
-roughly 550 MB unpacked against the 352 MB of Chromium that cloakbrowser fetches.
+advantage over cloakbrowser. The problem is the engine: Google scores its own browser best, so a
+Firefox fingerprint works against the one thing this login depends on. It also publishes no macOS
+binary, so you cannot develop against it on a Mac. Footprint is about the same, roughly 550 MB
+unpacked against the 352 MB of Chromium that cloakbrowser fetches.
 
-[Obscura](https://github.com/h4ckf0r0day/obscura) is a different category: a rendering engine
-written from scratch in Rust that runs JavaScript through V8 and speaks CDP, rather than a patched
-copy of a real browser. On resources it wins by a mile, claiming 30 MB of memory against 200 plus,
-a 70 MB binary, and instant startup. That is exactly why it cannot work here. reCAPTCHA inspects
-canvas, WebGL, audio, font metrics and a pile of Chrome internals, and a reimplementation will not
-match them; the project makes no reCAPTCHA claims of its own. Our selectors also depend on real
-layout geometry, which its optional pure-Rust layout engine is unlikely to reproduce faithfully on
-a page this heavy. Excellent for scraping documentation, wrong tool for a captcha gate.
+[Obscura](https://github.com/h4ckf0r0day/obscura) is a rendering engine written from scratch in
+Rust that runs JavaScript through V8 and speaks CDP, rather than a patched copy of a real browser.
+On resources it is far ahead, claiming 30 MB of memory against 200 plus, a 70 MB binary and instant
+startup. But reCAPTCHA inspects canvas, WebGL, audio, font metrics and a good deal of Chrome
+internals, and a reimplementation will not match them; the project makes no reCAPTCHA claims of its
+own. Our selectors also depend on real layout geometry, which its optional pure-Rust layout engine
+is unlikely to reproduce faithfully on a page this heavy. It looks well suited to scraping
+documentation, less so to getting past a captcha.
 
-[patchright](https://pypi.org/project/patchright/) is the one worth revisiting. It is a drop-in
-Playwright patch, so the switch touches the import and the launch call and nothing else, and it
-supports the persistent context this script relies on. With `channel="chrome"` it drives the Chrome
-already installed on the machine, which removes the 352 MB download outright and, since that Chrome
-is real and current while cloakbrowser's free binary is an older Chromium, may well score better
-too. The catch is that its stealth guidance wants a headed browser, whereas cloakbrowser claims
-identical fingerprints headless or not, so on a headless server you would be adding Xvfb.
+[patchright](https://pypi.org/project/patchright/) is worth revisiting. It is a drop-in Playwright
+patch, so the switch touches the import and the launch call and nothing else, and it supports the
+persistent context this script relies on. With `channel="chrome"` it drives the Chrome already
+installed on the machine, which removes the 352 MB download, and since that Chrome is real and
+current while cloakbrowser's free binary is an older Chromium, it may score better as well. The
+catch is that its stealth guidance wants a headed browser, whereas cloakbrowser claims identical
+fingerprints headless or not, so on a headless server you would be adding Xvfb.
 
 [nodriver](https://github.com/ultrafunkamsterdam/nodriver) drives the system Chrome with no extra
 binary and came out on top of the 2026 anti-detect benchmarks. It is not the Playwright API though,
 so adopting it means rewriting the script and giving up the humanized mouse and keyboard timing
 that comes with cloakbrowser.
 
-One last note, because it outranks all of the above: the cheapest browser is the one that never
-starts. The token is valid for an hour, so caching it on disk lets any read inside that window run
-over plain HTTP with no browser at all. That saves far more than swapping engines ever would.
+Worth more than any of these swaps: the token is valid for an hour, so caching it on disk lets any
+read inside that window run over plain HTTP without starting a browser at all.
