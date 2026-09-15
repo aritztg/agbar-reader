@@ -21,13 +21,11 @@ Environment variables work too if you would rather not keep a `.env` around:
 AGBAR_NIF=... AGBAR_PASSWORD=... uvx --from git+https://github.com/aritztg/agbar-reader agbar-reader
 ```
 
-It prints the resulting URL and `login: OK` or `login: FAILED`. Exit code is 0 on success,
-1 if it is still sitting on the form.
+It prints `login: OK` or `login: FAILED` with the reason. Exit code is 0 on success, 1 otherwise.
 
 On success it also prints the access token:
 
 ```
-url: https://www.aiguesdebarcelona.cat/es/area-clientes#/inicio
 login: OK
 token: eyJhbGciOiJSUzI1NiIsImtpZCI6...
 expires: 2026-09-15 10:31:37
@@ -79,8 +77,8 @@ same site, a brand new browser on every visit. Keeping the profile means the reC
 survives between runs and you look like a returning visitor.
 
 It also means the session cookie may still be valid on the next run. When that happens the site
-skips the form and the script reports `login: OK (reused the session in the saved profile)`
-without sending the credentials at all.
+skips the form and the token comes straight out of the cookie, without the credentials being
+sent at all.
 
 ## Do not run this in a loop
 
@@ -148,3 +146,16 @@ that comes with cloakbrowser.
 
 Worth more than any of these swaps: the token is valid for an hour, so caching it on disk lets any
 read inside that window run over plain HTTP without starting a browser at all.
+
+## Use it from Python
+
+`login()` is the part worth importing. It takes the credentials and returns a
+token, raising `MaxSessionsReached`, `RecaptchaChallenge` or `LoginError` when it
+cannot get one.
+
+```python
+from agbar_reader import login
+
+token = login("12345678Z", "your-password")
+print(token.value, token.expires)
+```
