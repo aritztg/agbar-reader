@@ -12,11 +12,11 @@ is a Debian container, so it can.
 ## Install
 
 Add `https://github.com/aritztg/agbar-reader` as an add-on repository, install
-"Agbar token" and start it. The build downloads Chromium and comes out around
-1.1 GB, so give it a few minutes and check you have the space. It needs `amd64`
-or `aarch64`: there is no 32 bit build of the browser.
+"Agbar token" and start it. It builds on the image CloakBrowser publishes and
+comes out around 2.5 GB, so check you have the space and give it several
+minutes. It needs `amd64` or `aarch64`: there is no 32 bit build of the browser.
 
-Then point the Aigües de Barcelona integration at it. The add-on writes its own
+Then point the Aigues de Barcelona integration at it. The add-on writes its own
 address to the log when it starts:
 
 ```
@@ -28,6 +28,19 @@ resolve, use the IP address of your Home Assistant machine with port 8099, which
 the add-on maps to the host.
 
 Nothing appears in the sidebar. This has no interface of its own.
+
+## The first login may need you
+
+A browser profile Google has never seen gets an image grid instead of a token,
+and the add-on answers `503 reCAPTCHA challenge`. This is not a misconfiguration
+and there is no setting that avoids it: measured against a public detector, the
+browser scores the same here as it does on a laptop where the same login works,
+and what separates them is that the laptop's profile has passed a challenge on
+this site before.
+
+So the first login may have to be solved by hand, once. After that the profile
+in `/data` carries what Google wants to see, and the add-on renews on its own
+for as long as that directory survives.
 
 ## The endpoint
 
