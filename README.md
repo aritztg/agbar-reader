@@ -71,22 +71,6 @@ client is not allowed to use it (`invalid_client`), so that shortcut is closed t
 The token that comes back lasts 60 minutes with no refresh token, so a long-running client has to drive the
 browser through the login again every hour.
 
-## Why cloakbrowser and not invisible_playwright
-
-[invisible_playwright](https://github.com/feder-cr/invisible_playwright) covers the same ground and
-is fully open source (MIT, with the patched browser under MPL-2.0), so it has no license key and no
-cap on concurrent sessions. It was considered and turned down for two reasons.
-
-It patches Firefox, and the only hard problem here is the reCAPTCHA score. Google rates its own
-browser well, so a Chromium fingerprint is the safer bet on exactly the variable that keeps breaking
-the login. It also publishes no macOS binary, which rules out developing against it on a Mac.
-
-Resources are close enough not to matter: 352 MB for the Chromium that cloakbrowser fetches against
-roughly 550 MB unpacked for the patched Firefox.
-
-The swap itself is small if the licensing ever becomes the deciding factor. `InvisiblePlaywright(profile_dir=...)`
-takes the same headless, humanize, locale and timezone arguments as `launch_persistent_context`.
-
 ## Why the profile is saved
 
 reCAPTCHA scores the browser, not the account, and a browser with no history scores badly.
@@ -126,3 +110,42 @@ Rerun with AGBAR_HEADLESS=0 and solve it by hand, or wait it out.
 ## What it does not do yet
 
 Nothing beyond the login: no bills, no meter readings, no consumption data.
+
+## Browser alternatives considered
+
+The browser is not decoration here, it is what mints the reCAPTCHA token, so any replacement is
+judged on one question above all: would Google still score it well enough to hand over a token
+invisibly? These were looked at and turned down.
+
+[invisible_playwright](https://github.com/feder-cr/invisible_playwright) patches Firefox at the
+source level, is MIT plus MPL-2.0, and has no license key or session cap, which is its real
+advantage over cloakbrowser. It loses on the thing that matters: Google scores its own browser
+best, so a Firefox fingerprint bets against us on the only variable that keeps breaking this login.
+It also publishes no macOS binary, so you cannot develop against it on a Mac. Footprint is a wash,
+roughly 550 MB unpacked against the 352 MB of Chromium that cloakbrowser fetches.
+
+[Obscura](https://github.com/h4ckf0r0day/obscura) is a different category: a rendering engine
+written from scratch in Rust that runs JavaScript through V8 and speaks CDP, rather than a patched
+copy of a real browser. On resources it wins by a mile, claiming 30 MB of memory against 200 plus,
+a 70 MB binary, and instant startup. That is exactly why it cannot work here. reCAPTCHA inspects
+canvas, WebGL, audio, font metrics and a pile of Chrome internals, and a reimplementation will not
+match them; the project makes no reCAPTCHA claims of its own. Our selectors also depend on real
+layout geometry, which its optional pure-Rust layout engine is unlikely to reproduce faithfully on
+a page this heavy. Excellent for scraping documentation, wrong tool for a captcha gate.
+
+[patchright](https://pypi.org/project/patchright/) is the one worth revisiting. It is a drop-in
+Playwright patch, so the switch touches the import and the launch call and nothing else, and it
+supports the persistent context this script relies on. With `channel="chrome"` it drives the Chrome
+already installed on the machine, which removes the 352 MB download outright and, since that Chrome
+is real and current while cloakbrowser's free binary is an older Chromium, may well score better
+too. The catch is that its stealth guidance wants a headed browser, whereas cloakbrowser claims
+identical fingerprints headless or not, so on a headless server you would be adding Xvfb.
+
+[nodriver](https://github.com/ultrafunkamsterdam/nodriver) drives the system Chrome with no extra
+binary and came out on top of the 2026 anti-detect benchmarks. It is not the Playwright API though,
+so adopting it means rewriting the script and giving up the humanized mouse and keyboard timing
+that comes with cloakbrowser.
+
+One last note, because it outranks all of the above: the cheapest browser is the one that never
+starts. The token is valid for an hour, so caching it on disk lets any read inside that window run
+over plain HTTP with no browser at all. That saves far more than swapping engines ever would.
