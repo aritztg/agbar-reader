@@ -12,8 +12,9 @@ is a Debian container, so it can.
 ## Install
 
 Add `https://github.com/aritztg/agbar-reader` as an add-on repository, install
-"Agbar token" and start it. The first build downloads about 350 MB of Chromium,
-so give it a few minutes.
+"Agbar token" and start it. The build downloads Chromium and comes out around
+1.1 GB, so give it a few minutes and check you have the space. It needs `amd64`
+or `aarch64`: there is no 32 bit build of the browser.
 
 Then point the Aigües de Barcelona integration at it. The add-on writes its own
 address to the log when it starts:
