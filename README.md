@@ -159,3 +159,10 @@ from agbar_reader import login
 token = login("12345678Z", "your-password")
 print(token.value, token.expires)
 ```
+
+## Home Assistant add-on
+
+`addon/` packages that function as a service for Home Assistant OS, whose core
+container runs on Alpine and cannot run the browser itself. Add this repository
+under add-on repositories, install "Agbar token", and point the Aigües de
+Barcelona integration at it. See [addon/DOCS.md](addon/DOCS.md).
