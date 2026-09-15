@@ -26,6 +26,10 @@ PORT = int(os.getenv("AGBAR_PORT", "8099"))
 # reCAPTCHA, and a fresh one every time is what earns an image grid.
 PROFILE = os.getenv("AGBAR_PROFILE", "/data/profile")
 
+# Headed, on the virtual display the base image sets up. CloakBrowser is plain
+# that aggressive sites detect headless even through its patches.
+HEADLESS = os.getenv("AGBAR_HEADLESS", "0") != "0"
+
 # One browser and one profile, so one login at a time. Two at once would fight
 # over the same directory.
 LOCK = threading.Lock()
@@ -59,7 +63,7 @@ def issue(nif, password):
             return token
 
         _LOGGER.info("Logging in")
-        token = login(nif, password, profile=PROFILE)
+        token = login(nif, password, profile=PROFILE, headless=HEADLESS)
         CACHE[nif] = token
         _LOGGER.info("Got a token valid until %s", token.expires)
         return token
