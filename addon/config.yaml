@@ -1,0 +1,16 @@
+---
+name: Agbar token
+version: "0.1.0"
+slug: agbar_token
+description: Logs in to Aigües de Barcelona with a real browser and hands the token to Home Assistant
+url: https://github.com/aritztg/agbar-reader
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: services
+boot: auto
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: Where the Aigües de Barcelona integration asks for a token
