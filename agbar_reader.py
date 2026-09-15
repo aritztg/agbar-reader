@@ -110,8 +110,11 @@ def login(nif, password, profile=PROFILE, headless=True, dismiss_cookies=False):
                 raise LoginError("the session looked alive but carried no token")
             return token
 
-        page.fill("#individual-user-id", nif)
-        page.fill("#individual-password", password)
+        # Typed rather than filled. fill() sets the value through a CDP command,
+        # which is one of the things reCAPTCHA watches for; press_sequentially
+        # sends real key events instead.
+        page.locator("#individual-user-id").press_sequentially(nif, delay=80)
+        page.locator("#individual-password").press_sequentially(password, delay=80)
         # The page has three "Entrar" buttons. Two of them belong to the hidden
         # "Empresas" tab, which is what .business marks. The site reports the real
         # verdict in the getToken response, not in the page, so read it there.
