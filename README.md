@@ -24,6 +24,27 @@ AGBAR_NIF=... AGBAR_PASSWORD=... uvx --from git+https://github.com/aritztg/agbar
 It prints the resulting URL and `login: OK` or `login: FAILED`, and writes `after-login.png`
 to the current directory. Exit code is 0 on success, 1 if it is still sitting on the form.
 
+On success it also prints the access token:
+
+```
+url: https://www.aiguesdebarcelona.cat/es/area-clientes#/inicio
+login: OK
+token: eyJhbGciOiJSUzI1NiIsImtpZCI6...
+expires: 2026-09-15 10:31:37
+```
+
+## The token
+
+The token is a real credential. It goes to stdout, so keep it out of shared logs.
+
+It is an RS256 access token issued by `identity.aiguesdebarcelona.cat`, the same value the site
+keeps in its `ofexTokenJwt` cookie. The script reads it from the `getToken` response after a
+fresh login, or straight from the cookie when the saved profile still holds a session.
+
+It lasts 60 minutes and the login response carries no refresh token, so anything long running
+has to log in again every hour. Each login opens a session that nobody closes, which is how you
+end up in the section below.
+
 ## Options
 
 `AGBAR_HEADLESS=0` shows the browser window instead of running headless.

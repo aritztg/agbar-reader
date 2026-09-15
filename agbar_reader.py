@@ -2,6 +2,8 @@
 
 import os
 import sys
+import time
+from datetime import datetime
 
 from cloakbrowser import launch_persistent_context
 from dotenv import load_dotenv
@@ -9,6 +11,20 @@ from dotenv import load_dotenv
 URL = "https://www.aiguesdebarcelona.cat/es/area-clientes"
 TOKEN_PATH = "ofex-login-api/auth/getToken"
 PROFILE = os.path.expanduser(os.getenv("AGBAR_PROFILE", "~/.cache/agbar-reader/profile"))
+
+
+def report_token(context, body):
+    """Print the access token, from the login response or from the stored cookie."""
+    token = body.get("access_token")
+    if token:
+        expires = time.time() + body.get("expires_in", 0)
+    else:
+        cookie = next((c for c in context.cookies() if c["name"] == "ofexTokenJwt"), None)
+        if not cookie:
+            return
+        token, expires = cookie["value"], cookie["expires"]
+    print(f"token: {token}")
+    print(f"expires: {datetime.fromtimestamp(expires):%Y-%m-%d %H:%M:%S}")
 
 
 def main() -> int:
@@ -65,6 +81,7 @@ def main() -> int:
                 print("login: FAILED (the form never rendered)")
                 return 1
             print("login: OK (reused the session in the saved profile)")
+            report_token(browser, {})
             return 0
 
         page.fill("#individual-user-id", nif)
@@ -103,9 +120,15 @@ def main() -> int:
             print("Rerun with AGBAR_HEADLESS=0 and solve it by hand, or wait it out.")
             return 1
 
-        logged_in = not page.locator("#individual-password").is_visible()
-        print("login: OK" if logged_in else "login: FAILED (still on the form)")
-        return 0 if logged_in else 1
+        if page.locator("#individual-password").is_visible():
+            print("login: FAILED (still on the form)")
+            return 1
+
+        print("login: OK")
+        # getToken hands back the same JWT that the site stores in ofexTokenJwt,
+        # without the httpOnly wrapper. That is what an API client needs.
+        report_token(browser, body)
+        return 0
     finally:
         browser.close()
 
