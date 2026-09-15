@@ -75,7 +75,6 @@ def main() -> int:
         try:
             page.wait_for_selector("#individual-password", timeout=20000)
         except Exception:
-            page.screenshot(path="after-login.png", full_page=True)
             print(f"url: {page.url}")
             if "#/login" in page.url:
                 print("login: FAILED (the form never rendered)")
@@ -105,7 +104,6 @@ def main() -> int:
             except Exception:
                 pass
 
-        page.screenshot(path="after-login.png", full_page=True)
         print(f"url: {page.url}")
 
         if error:

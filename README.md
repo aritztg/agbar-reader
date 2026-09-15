@@ -2,7 +2,7 @@
 
 Proof of concept. Logs in to the [Aigües de Barcelona](https://www.aiguesdebarcelona.cat/es/area-clientes)
 customer area with [CloakBrowser](https://pypi.org/project/cloakbrowser/), a stealth Chromium build,
-prints the access token and saves a screenshot of the page it lands on.
+and prints the access token.
 
 ## Run it (uvx, no clone needed)
 
@@ -21,8 +21,8 @@ Environment variables work too if you would rather not keep a `.env` around:
 AGBAR_NIF=... AGBAR_PASSWORD=... uvx --from git+https://github.com/aritztg/agbar-reader agbar-reader
 ```
 
-It prints the resulting URL and `login: OK` or `login: FAILED`, and writes `after-login.png`
-to the current directory. Exit code is 0 on success, 1 if it is still sitting on the form.
+It prints the resulting URL and `login: OK` or `login: FAILED`. Exit code is 0 on success,
+1 if it is still sitting on the form.
 
 On success it also prints the access token:
 
