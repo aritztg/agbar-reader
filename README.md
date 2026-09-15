@@ -71,6 +71,22 @@ client is not allowed to use it (`invalid_client`), so that shortcut is closed t
 The token that comes back lasts 60 minutes with no refresh token, so a long-running client has to drive the
 browser through the login again every hour.
 
+## Why cloakbrowser and not invisible_playwright
+
+[invisible_playwright](https://github.com/feder-cr/invisible_playwright) covers the same ground and
+is fully open source (MIT, with the patched browser under MPL-2.0), so it has no license key and no
+cap on concurrent sessions. It was considered and turned down for two reasons.
+
+It patches Firefox, and the only hard problem here is the reCAPTCHA score. Google rates its own
+browser well, so a Chromium fingerprint is the safer bet on exactly the variable that keeps breaking
+the login. It also publishes no macOS binary, which rules out developing against it on a Mac.
+
+Resources are close enough not to matter: 352 MB for the Chromium that cloakbrowser fetches against
+roughly 550 MB unpacked for the patched Firefox.
+
+The swap itself is small if the licensing ever becomes the deciding factor. `InvisiblePlaywright(profile_dir=...)`
+takes the same headless, humanize, locale and timezone arguments as `launch_persistent_context`.
+
 ## Why the profile is saved
 
 reCAPTCHA scores the browser, not the account, and a browser with no history scores badly.
