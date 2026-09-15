@@ -40,9 +40,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxshmfence1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Installed from git rather than copied in: an add-on builds with its own
-# directory as the context, so the module one level up is out of reach.
-RUN pip install --no-cache-dir "agbar-reader @ git+https://github.com/aritztg/agbar-reader@main"
+# Installed from a source archive rather than copied in: an add-on builds with
+# its own directory as the context, so the module one level up is out of reach.
+# An archive rather than git+, because this base image ships no git.
+RUN pip install --no-cache-dir "https://github.com/aritztg/agbar-reader/archive/refs/heads/main.tar.gz"
 
 # Baked into the image. Left to the first request, this 350 MB download would
 # turn that request into a several minute wait and time the caller out.
