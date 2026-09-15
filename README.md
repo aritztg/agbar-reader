@@ -117,10 +117,29 @@ challenge, so that is the test each of these was measured against.
 
 [invisible_playwright](https://github.com/feder-cr/invisible_playwright) patches Firefox at the
 source level, is MIT plus MPL-2.0, and has no license key or session cap, which is its real
-advantage over cloakbrowser. The problem is the engine: Google scores its own browser best, so a
-Firefox fingerprint works against the one thing this login depends on. It also publishes no macOS
-binary, so you cannot develop against it on a Mac. Footprint is about the same, roughly 550 MB
-unpacked against the 352 MB of Chromium that cloakbrowser fetches.
+advantage over cloakbrowser. This used to be dismissed on the grounds that Google scores its own
+browser best, so a Firefox fingerprint would work against the one thing this login depends on.
+That was a guess, and measuring it showed the opposite. Asking the reCAPTCHA v3 score detector at
+antcpt.com from the same connection:
+
+| browser | reCAPTCHA v3 score |
+| --- | --- |
+| ordinary Chrome 152 | 0.9 |
+| cloakbrowser, which reports Chrome 146 | 0.3 |
+| invisible_playwright, which reports Firefox 151 | 0.9 |
+
+cloakbrowser scored 0.3 on macOS and in a Linux container alike, so it is the engine and not the
+host. What Google appears to penalise is a Chrome six versions behind the live one, not Firefox.
+
+None of which fixed this login. At 0.9 the Aigues de Barcelona form still answered with an image
+grid, because that grid is reCAPTCHA v2 behaviour: it turns on what Google already knows about
+that browser profile on that site, not on a v3 score. The score is worth watching as a cheap
+health check that costs no login attempt, but it is not the thing standing between this and a
+token.
+
+It still publishes no macOS binary, so you cannot develop against it on a Mac, and that objection
+stands. Footprint is about the same, roughly 550 MB unpacked against the 352 MB of Chromium that
+cloakbrowser fetches.
 
 [Obscura](https://github.com/h4ckf0r0day/obscura) is a rendering engine written from scratch in
 Rust that runs JavaScript through V8 and speaks CDP, rather than a patched copy of a real browser.
