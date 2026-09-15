@@ -57,6 +57,20 @@ once, since the choice is remembered afterwards.
 `AGBAR_PROFILE` sets where the browser profile lives. The default is
 `~/.cache/agbar-reader/profile`. Delete that directory to start over from a clean browser.
 
+## Can this skip the browser? No
+
+The login is not a plain OAuth call. The site posts to `api.aiguesdebarcelona.cat/ofex-login-api/auth/getToken`
+with a `recaptchaClientResponse` token in the query string, and the API checks that token against Google
+server-side. Sending a made-up value comes back with `invalid-input-response`, Google's own rejection.
+
+A valid reCAPTCHA token can only be minted by the reCAPTCHA script running in a real browser on the site's
+domain, and it is single use. So the browser is not optional here, it is what produces that token. The
+identity server does advertise a `password` grant at `/connect/token`, but the public `ab_ofex_nativa`
+client is not allowed to use it (`invalid_client`), so that shortcut is closed too.
+
+The token that comes back lasts 60 minutes with no refresh token, so a long-running client has to drive the
+browser through the login again every hour.
+
 ## Why the profile is saved
 
 reCAPTCHA scores the browser, not the account, and a browser with no history scores badly.
